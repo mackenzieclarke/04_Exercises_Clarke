@@ -1,6 +1,6 @@
 ---
 title: 'Weekly Exercises #4'
-author: "Put your name here"
+author: "Mackenzie Clarke"
 output: 
   html_document:
     keep_md: TRUE
@@ -96,13 +96,91 @@ These exercises will reiterate what you learned in the "Mapping data with R" tut
 
   1. Add the `Starbucks` locations to a world map. Add an aesthetic to the world map that sets the color of the points according to the ownership type. What, if anything, can you deduce from this visualization?  
 
-  2. Construct a new map of Starbucks locations in the Twin Cities metro area (approximately the 5 county metro area).  
 
-  3. In the Twin Cities plot, play with the zoom number. What does it do?  (just describe what it does - don't actually include more than one map).  
+```{r}
+world_map <- get_stamenmap(
+   bbox = c(left = -180, bottom = -57, right = 179, top = 82.1), 
+    maptype = "terrain",
+    zoom = 2
+)
+
+ggmap(world_map)
+
+#plotting the Starbucks data on my stamen map
+ggmap(world_map) + 
+  geom_point(data = Starbucks, 
+             aes(x = Longitude, 
+                 y = Latitude, 
+                 color = `Ownership Type`),
+             alpha = .3, 
+             size = .1) +
+  theme_map()
+```
+
+  2. Construct a new map of Starbucks locations in the Twin Cities metro area (approximately the 5 county metro area). 
+  
+  
+```{r}
+mn_starbucks <- Starbucks %>% 
+  filter(`State/Province` %in% "MN")
+```
+  
+  
+```{r}
+twin_cities_map <- get_stamenmap(
+    bbox = c(left = -94.4699, bottom = 44.4098, right = -91.6766, top = 45.4424), 
+    maptype = "terrain",
+    zoom = 9)
+
+ggmap(twin_cities_map) +
+   geom_point(data = mn_starbucks, 
+             aes(x = Longitude, 
+                 y = Latitude, 
+                 color = `Ownership Type`),
+             alpha = 1, 
+             size = .7) +
+  theme_map()
+
+```
+
+  3. In the Twin Cities plot, play with the zoom number. What does it do?  (just describe what it does - don't actually include more than one map).
+The zoom number is connected to the amount of detail that will be shown in the mapping. 
 
   4. Try a couple different map types (see `get_stamenmap()` in help and look at `maptype`). Include a map with one of the other map types.  
 
+```{r}
+twin_cities_map <- get_stamenmap(
+    bbox = c(left = -94.4699, bottom = 44.4098, right = -91.6766, top = 45.4424), 
+    maptype = "toner-2010",
+    zoom = 9)
+
+ggmap(twin_cities_map) +
+   geom_point(data = mn_starbucks, 
+             aes(x = Longitude, 
+                 y = Latitude),
+             alpha = 1, 
+             size = .7) +
+  theme_map()
+```
+
   5. Add a point to the map that indicates Macalester College and label it appropriately. There are many ways you can do think, but I think it's easiest with the `annotate()` function (see `ggplot2` cheatsheet).
+
+```{r}
+macalester_map <- get_stamenmap(
+    bbox = c(left = -93.4863, bottom = 44.8185, right = -92.7880, top = 45.0766), 
+    maptype = "toner-2010",
+    zoom = 11)
+
+ggmap(macalester_map) +
+   geom_point(data = mn_starbucks, 
+             aes(x = Longitude, 
+                 y = Latitude),
+             alpha = 1, 
+             size = .7) +
+  annotate(geom = "text", y = 44.9379, x = -93.1691, label = "Macalester College")
+  theme_map()
+```
+
 
 ### Choropleth maps with Starbucks data (`geom_map()`)
 
@@ -122,12 +200,60 @@ starbucks_with_2018_pop_est <-
 ```
 
   6. **`dplyr` review**: Look through the code above and describe what each line of code does.
+The first line with the read_csv is creating a new dataset, labeled census_pop_est_2018, and reading the data from the URL in. The second line with the separate function (the separate function separates a character variable into multiple variables) removes the dots from the state names. The state data was presented with period preceding the state name and this removes that so the data can be joined with another dataset. The select(-dot) function additionally helps us get rid of the period that precedes the state name. The mutate and str_to_lower function in the next line creates a new column in which the state name is presented as lowercase. The next line begins by creating a new dataset called starbucks_with_2018_pop_est. This new dataset will be created using left_join to join together starbucks_us_by_state with the census population data. We then mutate to add another column that gives us the number of starbucks (n) divided by the estimated population multiplied by 10,000 to allow us to understand the number of starbucks stores per 10,000 people. This accounts for the population of each state. 
+
 
   7. Create a choropleth map that shows the number of Starbucks per 10,000 people on a map of the US. Use a new fill color, add points for all Starbucks in the US (except Hawaii and Alaska), add an informative title for the plot, and include a caption that says who created the plot (you!). Make a conclusion about what you observe.
+  
+```{r}
+states_map <- map_data("state")
+
+
+
+starbucks_with_2018_pop_est %>% 
+  ggplot() +
+  geom_map(map = states_map,
+           aes(map_id = state_name,
+               fill = n/est_pop_2018 * 10000)) +
+  geom_point(data = Starbucks %>% filter(`Country` == "US", 
+                                         `State/Province` != c("HI", "AK")),
+             aes(x = Longitude, y = Latitude),
+             size = .05,
+             alpha = .2, 
+             color = "goldenrod") +
+expand_limits(x = states_map$long, y = states_map$lat) + 
+  theme_map() +
+  labs(title = "Number of Starbucks per 10,000 People", 
+       fill = "") +
+  scale_fill_viridis_c(option = "green")
+  theme(legend.background = element_blank())
+```
+  
 
 ### A few of your favorite things (`leaflet`)
 
   8. In this exercise, you are going to create a single map of some of your favorite places! The end result will be one map that satisfies the criteria below. 
+
+```{r}
+mackenzie_fav_places <- tibble(
+   place = c("Hai Hai", "Macalester College", "Bent Paddle Brewery", 
+            "Lake Harriet", "True North Ranch", "Pine Tree Apple Orchard",
+            "Minneapolis Institute of Art", "The Nook", "Superior Hiking Trail", "Home", "Half Moon Bay"),
+  long = c(-93.26259135894995, -93.16940235841348, -92.12048604141492, 
+           -93.30612131724241, -92.85301775841815, -92.95486944306221, -93.27226162826636, -93.15650797005495,
+           -91.28751872625006, -122.22964936888202, -122.43151703438164),
+  lat = c(45.01013234302003, 44.934866690092, 46.7685422995477, 
+          44.92265343749974, 44.82990649338687, 45.10689814136089, 
+          44.965000416497965, 44.926752586283584, 47.31420997282805, 37.487084041256715, 37.4321523389281),
+  top_3 = c("No", "No", "Yes", "No", "No", "No", "No", "Yes", "No", "Yes", "No")
+)
+```
+
+
+```{r}
+
+```
+
 
   * Create a data set using the `tibble()` function that has 10-15 rows of your favorite places. The columns will be the name of the location, the latitude, the longitude, and a column that indicates if it is in your top 3 favorite locations or not. For an example of how to use `tibble()`, look at the `favorite_stp_by_lisa` I created in the data R code chunk at the beginning.  
 
