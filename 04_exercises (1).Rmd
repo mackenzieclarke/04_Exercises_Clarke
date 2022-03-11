@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -117,6 +117,8 @@ ggmap(world_map) +
   theme_map()
 ```
 
+**We can deduce that the majority of Starbucks locations in the United States are company owned, whereas the locations in Europe, Asia, and South America appear to be more joint ventures and licensed locations.**
+
   2. Construct a new map of Starbucks locations in the Twin Cities metro area (approximately the 5 county metro area). 
   
   
@@ -144,7 +146,8 @@ ggmap(twin_cities_map) +
 ```
 
   3. In the Twin Cities plot, play with the zoom number. What does it do?  (just describe what it does - don't actually include more than one map).
-The zoom number is connected to the amount of detail that will be shown in the mapping. 
+  
+**The zoom number is connected to the amount of detail that will be shown in the mapping.** 
 
   4. Try a couple different map types (see `get_stamenmap()` in help and look at `maptype`). Include a map with one of the other map types.  
 
@@ -177,7 +180,7 @@ ggmap(macalester_map) +
                  y = Latitude),
              alpha = 1, 
              size = .7) +
-  annotate(geom = "text", y = 44.9379, x = -93.1691, label = "Macalester College")
+  annotate(geom = "text", y = 44.9379, x = -93.1691, label = "Macalester College") +
   theme_map()
 ```
 
@@ -229,12 +232,21 @@ expand_limits(x = states_map$long, y = states_map$lat) +
   scale_fill_viridis_c(option = "green")
   theme(legend.background = element_blank())
 ```
-  
+**There is a high density of Starbucks locations in Washington, Oregon, California, Colorado, Nevada, and Arizona. Perhaps this is because people on the East Coast prefer Dunkin Donuts over Starbucks :) Also, Starbucks was founded in Seattle, so maybe there are more Starbucks locations on the West Coast because of this.**
 
 ### A few of your favorite things (`leaflet`)
 
   8. In this exercise, you are going to create a single map of some of your favorite places! The end result will be one map that satisfies the criteria below. 
+  
+  
+  * Create a data set using the `tibble()` function that has 10-15 rows of your favorite places. The columns will be the name of the location, the latitude, the longitude, and a column that indicates if it is in your top 3 favorite locations or not. For an example of how to use `tibble()`, look at the `favorite_stp_by_lisa` I created in the data R code chunk at the beginning.  
 
+  * Create a `leaflet` map that uses circles to indicate your favorite places. Label them with the name of the place. Choose the base map you like best. Color your 3 favorite places differently than the ones that are not in your top 3 (HINT: `colorFactor()`). Add a legend that explains what the colors mean.  
+  
+  * Connect all your locations together with a line in a meaningful way (you may need to order them differently in the original data).  
+  
+  * If there are other variables you want to add that could enhance your plot, do that now.    
+  
 ```{r}
 mackenzie_fav_places <- tibble(
    place = c("Hai Hai", "Macalester College", "Bent Paddle Brewery", 
@@ -253,8 +265,8 @@ mackenzie_fav_places <- tibble(
 
 ```{r}
 
-pal <- colorFactor("green", 
-                    domain = mackenzie_fav_places$top_3)
+factpal <- colorFactor(topo.colors(3),
+                       mackenzie_fav_places$top_3)
 
 leaflet(data = mackenzie_fav_places) %>% 
   addTiles() %>% 
@@ -263,17 +275,19 @@ leaflet(data = mackenzie_fav_places) %>%
              lat = ~lat, 
              weight = 10, 
              opacity = 1, 
-             color = col2hex("darkred"))
+             color = ~factpal(top_3)) %>% 
+  addPolylines(lat = ~lat,
+               lng = ~long,
+               color = col2hex("green")) %>% 
+  addLegend(pal = factpal, 
+            values = ~top_3,
+            opacity = 0.5,
+            title = "Top 3 Favorite Place?",
+            position = "bottomleft")
 ```
 
+**I ordered the points so that California, my home, connects to the Superior Hiking Trail, the first place I ever visited in Minnesota during my preorientation Macward Bound trip in the summer of 2018.**
 
-  * Create a data set using the `tibble()` function that has 10-15 rows of your favorite places. The columns will be the name of the location, the latitude, the longitude, and a column that indicates if it is in your top 3 favorite locations or not. For an example of how to use `tibble()`, look at the `favorite_stp_by_lisa` I created in the data R code chunk at the beginning.  
-
-  * Create a `leaflet` map that uses circles to indicate your favorite places. Label them with the name of the place. Choose the base map you like best. Color your 3 favorite places differently than the ones that are not in your top 3 (HINT: `colorFactor()`). Add a legend that explains what the colors mean.  
-  
-  * Connect all your locations together with a line in a meaningful way (you may need to order them differently in the original data).  
-  
-  * If there are other variables you want to add that could enhance your plot, do that now.  
   
 ## Revisiting old datasets
 
@@ -322,7 +336,8 @@ ggmap(washington_dc) +
              size = .7) +
   theme_map() +
   scale_colour_viridis_c(option = "inferno") +
-  labs(title = "Total Number of Departures From Each Station")
+  labs(title = "Total Number of Departures From Each Station",
+       fill = guide_legend("Number of Departures")) #this did not work and I could not figure out how to change the title of the legend. 
 
 
 ```
@@ -358,6 +373,7 @@ ggmap(washington_dc) +
              size = .7) +
   labs(title = "Departures From Stations By Casual Users") +
    theme_map() 
+#Again, I couldn't figure out how to change the title of the legend. 
  
 
 ```
@@ -385,12 +401,13 @@ state_covid %>%
   #This assures the map looks decently nice:
   expand_limits(x = states_map$long, y = states_map$lat) + 
   theme_map() +
-  labs(title = "Most Recent Cumulative COVID Cases By State", 
+  labs(title = "Most Recent Cumulative COVID Cases By State",
+       fill = "Case Count",
        caption = "Created by Mackenzie Clarke")
 
 ```
 
-**The problem with this map is that it does not account for the population of each state. This data is misleading because of this.**
+**This map shows that California, Texas, and New York have the highest case count in the United States. The problem with this map is that it does not account for the population of each state. This data is misleading because of this as CA, TX and NY have the highest populations in the country.**
 
   
   12. Now add the population of each state to the dataset and color the states by most recent cumulative cases/10,000 people. See the code for doing this with the Starbucks data. You will need to make some modifications. 
@@ -414,7 +431,8 @@ state_covid %>%
   #This assures the map looks decently nice:
   expand_limits(x = states_map$long, y = states_map$lat) + 
   theme_map() +
-  labs(title = "Most Recent Cumulative COVID Cases By State", 
+  labs(title = "Most Recent Cumulative COVID Cases By State",
+       fill = "Cases Per 10,000",
        caption = "Created by Mackenzie Clarke")
   
 ```
@@ -435,35 +453,104 @@ data("MplsDemo")
 
 
 ```{r}
-MplsStops %>%
+mpls_suspicious <- MplsStops %>%
   group_by(neighborhood) %>%
-  summarize(stops = n(), 
-            prop_suspicious = mean(problem == "suspicious")) 
-  
-  
- 
-  
+  mutate(stops = n(), 
+            prop_suspicious = mean(problem == "suspicious")) %>% 
+  arrange(desc(stops))
+
+mpls_suspicious
   
 ```
   
   
   
-  15. Use a `leaflet` map and the `MplsStops` dataset to display each of the stops on a map as a small point. Color the points differently depending on whether they were for suspicious vehicle/person or a traffic stop (the `problem` variable). HINTS: use `addCircleMarkers`, set `stroke = FAlSE`, use `colorFactor()` to create a palette.  
-  
+  15. Use a `leaflet` map and the `MplsStops` dataset to display each of the stops on a map as a small point. Color the points differently depending on whether they were for suspicious vehicle/person or a traffic stop (the `problem` variable). HINTS: use `addCircleMarkers`, set `stroke = FAlSE`, use `colorFactor()` to create a palette. 
+
+```{r}
+
+factorpal <- colorFactor(topo.colors(5), MplsStops$problem)
+
+leaflet(data = MplsStops) %>% 
+  addTiles() %>% 
+  addCircleMarkers(lng = ~long,
+                   lat = ~lat,
+                   label = ~neighborhood,
+                   weight = 1,
+                   opacity = 1,
+                   stroke = FALSE, 
+                   color = ~factorpal(problem)) %>% 
+  addLegend(pal = factorpal,
+            values = ~problem,
+            opacity = 0.5,
+            title = NULL,
+            position = "bottomleft")
+```
+
+
+
   16. Save the folder from moodle called Minneapolis_Neighborhoods into your project/repository folder for this assignment. Make sure the folder is called Minneapolis_Neighborhoods. Use the code below to read in the data and make sure to **delete the `eval=FALSE`**. Although it looks like it only links to the .sph file, you need the entire folder of files to create the `mpls_nbhd` data set. These data contain information about the geometries of the Minneapolis neighborhoods. Using the `mpls_nbhd` dataset as the base file, join the `mpls_suspicious` and `MplsDemo` datasets to it by neighborhood (careful, they are named different things in the different files). Call this new dataset `mpls_all`.
 
-```{r, eval=FALSE}
+```{r}
 mpls_nbhd <- st_read("Minneapolis_Neighborhoods/Minneapolis_Neighborhoods.shp", quiet = TRUE)
 ```
 
+```{r}
+mpls_all <- mpls_nbhd %>%
+  left_join(mpls_suspicious, 
+            by = c("BDNAME" = "neighborhood")) %>%
+  left_join(MplsDemo, 
+            by = c("BDNAME" = "neighborhood"))
+mpls_all
+```
+
+
   17. Use `leaflet` to create a map from the `mpls_all` data  that colors the neighborhoods by `prop_suspicious`. Display the neighborhood name as you scroll over it. Describe what you observe in the map.
+
+```{r}
+palnumer <- colorNumeric("magma", 
+                         domain = mpls_all$prop_suspicious)
+
+leaflet(data = mpls_all) %>% 
+  addTiles() %>% 
+  addCircles(lng = ~long,
+             lat = ~lat,
+             label = ~BDNAME, 
+             color = ~palnumer(prop_suspicious)) %>% 
+  addLegend(pal = palnumer,
+            values = ~prop_suspicious,
+            position = "bottomleft",
+            title = "Proportion Suspicious")
+```
+
+**There is a clear demarcation between neighborhoods in the proportion of suspicious police stops. I suspect that there is likely correlation between the neighborhoods with darker dots (majority traffic stops instead of suspicious stops) and the demographic of that neighborhood as it has been statistically suggested that police departments are more likely to stop people of color for suspicious violations.**
   
   18. Use `leaflet` to create a map of your own choosing. Come up with a question you want to try to answer and use the map to help answer that question. Describe what your map shows. 
+
+```{r}
+palnumer <- colorNumeric("magma",
+                          domain = mpls_all$prop_suspicious)
+
+leaflet(data = mpls_all) %>% 
+  addTiles() %>% 
+  addCircles(lng = ~long,
+             lat = ~lat,
+             label = ~race, 
+             color = ~palnumer(prop_suspicious)) %>% 
+  addLegend(pal = palnumer,
+            values = ~prop_suspicious,
+            position = "bottomleft",
+            title = "Proportion Suspicious")
+```
+
+**Instead of coloring by neighborhood name, I colored by race in this map to see if I could identify any trends that I talked about in the previous problem (i.e if the areas with higher proportion suspicious stops was a larger demographic of people of color). This map is not perfect, but the results were interesting.**
+
   
   
 ## GitHub link
 
   19. Below, provide a link to your GitHub page with this set of Weekly Exercises. Specifically, if the name of the file is 04_exercises.Rmd, provide a link to the 04_exercises.md file, which is the one that will be most readable on GitHub.
 
+https://github.com/mackenzieclarke/04_Exercises_Clarke
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
